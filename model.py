@@ -16,29 +16,30 @@ class EPPN(nn.Module):
     có cùng kích thước không gian với ảnh đầu vào.
 
     Kiến trúc:
-        - 6 lớp Conv2d (kernel 3x3, padding 1, 32 channels)
-        - Lớp 1-3: Sequential (tuần tự) với ReLU
-        - Lớp 4-6: Symmetric skip connections (đối xứng ngược)
-            + Lớp 4: concat với lớp 3  (in_channels = 64)
-            + Lớp 5: concat với lớp 2  (in_channels = 64)
-            + Lớp 6: concat với lớp 1  (in_channels = 64)
+        - 7 lớp Conv2d (kernel 3x3, padding 1, 32 channels)
+        - Lớp 1-4: Sequential (tuần tự) với ReLU
+        - Lớp 5-7: Symmetric skip connections (đối xứng ngược)
+            + Lớp 5: concat với lớp 3  (in_channels = 64)
+            + Lớp 6: concat với lớp 2  (in_channels = 64)
+            + Lớp 7: concat với lớp 1  (in_channels = 64)
         - Lớp cuối dùng Sigmoid (output 3 channels cho RGB)
     """
 
     def __init__(self):
         super(EPPN, self).__init__()
 
-        # === Encoder (3 lớp tuần tự) ===
+        # === Encoder (4 lớp tuần tự) ===
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)
 
         # === Decoder (3 lớp với symmetric skip connections) ===
         # Input channels = 32 (prev) + 32 (skip) = 64
-        self.conv4 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
         self.conv5 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
+        self.conv6 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
         # Lớp cuối: output 3 channels (R, G, B) cho ma trận A
-        self.conv6 = nn.Conv2d(64, 3, kernel_size=3, stride=1, padding=1)
+        self.conv7 = nn.Conv2d(64, 3, kernel_size=3, stride=1, padding=1)
 
         self.relu = nn.ReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
@@ -51,18 +52,19 @@ class EPPN(nn.Module):
         Returns:
             A: Ma trận tham số tăng cường (B, 3, H, W), giá trị trong [0, 1]
         """
-        # Encoder: 3 lớp tuần tự
-        feat1 = self.relu(self.conv1(x))   # (B, 32, H, W)
+        # Encoder: 4 lớp tuần tự
+        feat1 = self.relu(self.conv1(x))      # (B, 32, H, W)
         feat2 = self.relu(self.conv2(feat1))  # (B, 32, H, W)
         feat3 = self.relu(self.conv3(feat2))  # (B, 32, H, W)
+        feat4 = self.relu(self.conv4(feat3))  # (B, 32, H, W)
 
         # Decoder: 3 lớp với symmetric skip connections (đối xứng ngược)
-        # Lớp 4 concat với lớp 3
-        feat4 = self.relu(self.conv4(torch.cat([feat3, feat3], dim=1)))  # (B, 32, H, W)
-        # Lớp 5 concat với lớp 2
-        feat5 = self.relu(self.conv5(torch.cat([feat4, feat2], dim=1)))  # (B, 32, H, W)
-        # Lớp 6 concat với lớp 1 → Sigmoid (không dùng ReLU)
-        A = self.sigmoid(self.conv6(torch.cat([feat5, feat1], dim=1)))   # (B, 3, H, W)
+        # Lớp 5 concat với lớp 3
+        feat5 = self.relu(self.conv5(torch.cat([feat4, feat3], dim=1)))  # (B, 32, H, W)
+        # Lớp 6 concat với lớp 2
+        feat6 = self.relu(self.conv6(torch.cat([feat5, feat2], dim=1)))  # (B, 32, H, W)
+        # Lớp 7 concat với lớp 1 → Sigmoid (không dùng ReLU)
+        A = self.sigmoid(self.conv7(torch.cat([feat6, feat1], dim=1)))   # (B, 3, H, W)
 
         return A
 
