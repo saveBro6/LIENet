@@ -36,6 +36,8 @@ def parse_args():
                         help='Đường dẫn checkpoint để tiếp tục huấn luyện')
     parser.add_argument('--num_workers', type=int, default=Config.num_workers,
                         help='Số worker cho DataLoader')
+    parser.add_argument('--q', action='store_true',
+                        help='Quiet mode: tắt thanh tiến trình tqdm, chỉ hiển thị kết quả cuối epoch')
     return parser.parse_args()
 
 
@@ -141,7 +143,8 @@ def train():
             enumerate(train_loader),
             total=len(train_loader),
             desc=f"Epoch [{epoch+1}/{args.epochs}]",
-            ncols=120
+            ncols=120,
+            disable=args.q
         )
 
         start_time = time.time()
@@ -165,7 +168,7 @@ def train():
                 epoch_losses[key] += loss_dict[key]
 
             # Cập nhật thanh tiến trình
-            if (batch_idx + 1) % Config.print_every == 0 or batch_idx == 0:
+            if not args.q and ((batch_idx + 1) % Config.print_every == 0 or batch_idx == 0):
                 pbar.set_postfix({
                     'total': f"{loss_dict['L_total']:.4f}",
                     'spa': f"{loss_dict['L_spa']:.4f}",
