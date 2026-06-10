@@ -5,3 +5,5 @@ dataset/
 results/
 tesst/
 tesst-results/
+new_checkpoints/
+new_results/

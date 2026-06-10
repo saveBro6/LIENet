@@ -192,6 +192,17 @@ def train():
               f"col={epoch_losses['L_col']:.4f} | "
               f"tvA={epoch_losses['L_tvA']:.4f}")
 
+        # Ghi log kết quả epoch vào train.log ở checkpoints/
+        log_path = os.path.join(args.checkpoint_dir, 'train.log')
+        log_mode = 'w' if (epoch == 0 and start_epoch == 0) else 'a'
+        with open(log_path, log_mode, encoding='utf-8') as f:
+            f.write(f"Epoch [{epoch+1}/{args.epochs}] - {elapsed:.1f}s - "
+                    f"Loss: total={epoch_losses['L_total']:.4f} | "
+                    f"spa={epoch_losses['L_spa']:.4f} | "
+                    f"exp={epoch_losses['L_exp']:.4f} | "
+                    f"col={epoch_losses['L_col']:.4f} | "
+                    f"tvA={epoch_losses['L_tvA']:.4f}\n")
+
         # ========================
         # Lưu checkpoint
         # ========================
